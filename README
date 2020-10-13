@@ -1,0 +1,222 @@
+Setup Embedded Linux Development Environment:
+(Ubuntu Minimal FS Porting on beaglebone black using Ownbuilt Binaries):
+-----------------------------------------------------------------------
+I.  Prebuilt Images porting on AM335X.
+II. Install Required Packages.
+III.Setup U-boot Development Environment.
+IV. Setup Kernel Development Environment.
+V.  Setup RFS Development Environment.
+
+I. Ubuntu Minimal FS Porting on beaglebone black using Prebuilt Binaries:
+----------------------------------------------------------------------
+Using SDCard:
+------------
+1. Prepare an SD Card with 2 partitions: one for the boot and one for the rootfs. 
+   $ sudo ./sdcard_partition.sh /dev/sd<x>
+2. Copy files over to the boot partition:
+   $ cp MLO u-boot.img  uEnv.txt  /media/$USER/boot
+3. copy root file system.
+   $ cd ~
+   $ mkdir rootfs
+   $ sudo mount /dev/sdbx2 rootfs
+   $ sudo tar xJvf ubuntu-trusty-14.04-rootfs-3.14.4.1-bone-armhf.com.tar.xz -C rootfs
+   $ sudo umount rootfs
+4. After insert the SD card on BBB, update software packages otherwise sudo permission problem encounter.
+   $ sudo apt-get update (user name:ubuntu; Password:ubuntu)
+5. Insert SDcard on BBB target and press switch2 and power on board. Now BBB booting from SD card.
+
+
+II. Install Required Pacakges:
+------------------------------
+1. Install Cross Compile toolchain
+	$ mkdir -p ~/opt
+	$ cd ~/opt
+	$ tar xvf ~/KM_GIT/bbb/emblinux/toolchain/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
+
+-> Add the below line in last line of ~/.bashrc file.
+
+	export PATH=/home/$user/opt/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf/bin:$PATH
+
+2. Install Device Tree Compiler
+	$ sudo apt-get install device-tree-compiler
+3. Install u-boot-tools (mkimage)
+	$ sudo apt-get install u-boot-tools
+	$ sudo apt-get install ncurses-dev
+3. Host side How to install tftp server on ubuntu: follow video
+	$ sudo apt-get install openbsd­inetd
+	$ sudo apt-get install tftpd­htpd
+	$ sudo apt-get install tftpd­hpa
+	$ vi /etc/inetd.conf
+	$ sudo vi /etc/inetd.conf
+	$ vim /etc/default/tftpd-hpa
+	$ sudo vim /etc/default/tftpd-hpa
+	$ /etc/init.d/openbsd­inetd restart
+	$ sudo /etc/init.d/openbsd­inetd restart
+	$ sudo /etc/init.d/tftpd­hpa restart
+4. Install nfs Server.
+	$ sudo apt-get install sudo bzip2 git device-tree-compiler
+	$ sudo dpkg-reconfigure dash
+		--> When the dash dialog comes up select no.
+		--> Then issue the command vi sudo.
+	$ sudo visudo
+	and at the bottom add
+		------------------------------	
+		|username ALL=(ALL:ALL) ALL  |  ( Where username is the name of the host system user)
+		------------------------------
+	Configuring the NFS server
+	==========================
+	$ sudo nano /etc/hosts.allow
+	Add to the end of the file:
+		------------
+		|ALL: LOCAL|
+		------------
+	$ sudo apt-get install nfs-kernel-server nfs-common portmap
+	$ mkdir ~/rootfs
+	$ sudo nano /etc/exports
+	 At the bottom of the file add:
+		---------------------------------------------------------------------------------
+		|/home/username/rootfs xxx.xxx.xxx.xxx(rw,sync,no_root_squash,no_subtree_check) |
+		---------------------------------------------------------------------------------
+	( Where username is the normal user you’re logged into, and xxx.xxx.xxx.xxx is the static ip address you’re going to assign to your Beaglebone Black.)
+	$ sudo exportfs -a
+	$ sudo nano /etc/default/services
+		And add to the file
+		---------
+		| NFS=1 |
+		---------
+	--> Finally, start the nfs-kernel-server service. Then test exports.
+	$ sudo service nfs-kernel-server start
+	$ sudo exportfs
+	--> Copy the rootfs to the rootfs directory
+	$ sudo tar xfvp ubuntu-trusty-14.04-rootfs-3.14.4.1-bone-armhf.com.tar.xz -C ~/rootfs/
+	$ sudo nano ~/rootfs/etc/fstab
+		--------------------------------------------------
+		| /dev/nfs / nfs defaults 0 0			  |
+		| /dev/mmcblk0p1 /boot/uboot auto defaults 0 0    |
+		--------------------------------------------------
+	$ sudo nano ~/rootfs/etc/inittab
+		-------------------------------------------------
+	        | T0:23:respawn:/sbin/getty -L ttyO0 115200 vt102|
+		-------------------------------------------------
+	--> Finally change the uEnv.txt
+ 
+III. Setup u-boot Development Environment:
+-----------------------------------------
+1. U-boot Configuration & Compilation
+	1.1. Download u-boot source code from kernel masters server.
+        	$ cd ~/KM_GIT/bbb/
+        	$ git clone git@192.168.1.6:bbb/uboot-2017.git
+	1.2. U-boot Configuration
+        	$ cd ~/KM_GIT/bbb/u-boot-2017
+		Input: configs/am335x_evm_defconfig.
+		$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- am335x_evm_config
+		output: ".config" file
+	1.3. U-boot Compilation
+		Input: ".config" file
+		$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+		output: 
+		u-boot.bin is the binary compiled U-Boot bootloader.
+		u-boot.img contains u-boot.bin along with an additional header to be used by the boot                 ROM to determine how and where to load and execute U-Boot.
+2. Own Built images Porting on AM335X
+	2.1. Peripheral Booting: (UART, Ethernet, USB) - Development
+	     UART: (Use TeraTerm)
+	     spl/u-boot-spl.bin file.
+	     Switch ON EVM with switch settings for UART boot. When “CCCC” characters appear on 
+             TeraTerm window, from the File Menu select Transfer --> XMODEM --> Send (1K mode).
+	     Select “u-boot-spl.bin” for the transfer. After image is successfully downloaded, the 
+             ROM code will boot it.
+	     When “CCCC” characters appear on TeraTerm window, from the File Menu select Transfer -->              YMODEM --> Send (1K mode)  Select “u-boot.img” for the transfer After image is 
+             successfully downloaded, U-Boot will boot it.
+             Hit enter and get to u-boot prompt “U-Boot# ”
+	2.2. Memory Booting: (SDCARD, eMMC, NAND, NOR) - Production/Release
+	     BBB booting from SDCARD:
+   		$ cp MLO u-boot.img  uEnv.txt  /media/$USER/boot
+	
+IIV. Setup Linux Kernel Development Environment:
+-----------------------------------------------
+1. Linux Kernel 3.14 Configuration & Compilation:
+	1.1. Download kernel source code from kernel masters server.
+        	$ cd ~/KM_GIT/bbb/
+        	$ git clone git@192.168.1.6:bbb/kernel-bbb-3.14.git
+	1.2. Kernel Configuration
+        	$ cd ~/KM_GIT/bbb/kernel-bbb-3.14
+		$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- beaglebone_defconfig
+		$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+	1.3. kernel Compilation
+		$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- uImage LOADADDR=0x80008000 -j4
+	1.4. dtbs compilation
+		$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- dtbs
+2. Flash Linux Kernel Own built images on AM335X. 
+	2.1. Peripheral Booting: (Ethernet, USB, UART) - Development
+	     Ethernet:
+	     2.1.1. BBB booting from tftpboot(Ethernet) manual (u-boot command prompt)
+		# dhcp (to know IP address and also run bootp variable (which contains tftp).)
+		# setenv serverip <server(Host)  IP address>
+		# setenv ipaddr   <Target board IP Address>  
+		# tftpboot 0x80200000 zImage
+		# tftpboot 0x80f80000 am335x-boneblack.dtb
+		# setenv bootargs console=ttyO0,115200n8 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
+		# bootz 0x80200000 - 0x80f80000
+	     2.1.2. BBB booting from tftpboot automation using uEnv.txt
+	2.2. Memory Booting: (SDCARD, eMMC, NAND, NOR) - Production/Release
+	    eMMC:
+		2.2.1. copy All images(MLO,u-boot.img,uEnv.txt,zImage,.config & am335x-boneblack.dtbi)                from your system to bbb target.
+		$ scp <Images Path in your system> ubuntu@<bbb IP Address>:~/
+		2.2.2. Copy MLO, u-boot.img and uEnv.txt  files in to  eMMC first partition (boot). 
+		(bbb target)$ cd ~/
+		(bbb target)$ sudo cp MLO u-boot.img uEnv.txt /boot/uboot/
+		2.2.3. Copy zImage, .config &am335x-boneblack.dtb in to eMMC second partition(rootfs)                (bbb target)$ cd ~/
+		(bbb target)$ sudo cp zImage /boot/vmlinuz-3.14.4.1-bone-armhf.com
+		(bbb target)$ sudo cp zImage /boot/
+		(bbb target)$ sudo cp .config /boot/config-3.14.4.1-bone-armhf.com
+		(bbb target)$ sudo cp am335x-boneblack.dtb  /boot/dtbs/
+
+	     BBB Booting from eMMC Manual:
+		$ load mmc 1:2 0x80f80000 /boot/zImage
+		$ load mmc 1:2 0x80f80000 /boot/dtbs/am335x-boneblack.dtb
+		$ setenv bootargs console=ttyO0,115200n8 root=/dev/mmcblck0p2 rootfstype=ext4 rootwait
+		$ bootz 0x80200000 - 0x80f80000
+
+	     BBB Booting from eMMC Automation using uEnv.txt file:
+
+V. Setup Root File System Development Environment:
+-------------------------------------------------
+Refer ~/KM_GIT/bbb/emblinux/minfs/OwnBuilt/RFS/README Document
+****************************************************************************************************
+MMC vs eMMC vs NAND vs NOR
+--------------------------
+MMC - Multi Media Card  is similar to an SD card.
+eMMC - 
+The eMMC (embedded MMC) architecture puts the MMC components (flash memory plus controller) into a small ball grid array (BGA) IC package for use in circuit boards as an embedded non-volatile memory system. This is noticeably different from other versions of MMC as this is not a user-removable card, but rather a permanent attachment to the circuit board. eMMC also does not support the SPI-bus protocol.
+
+eMMC is great example of "managed NAND." These mass storage devices contain NAND flash memory along with other related controller and interface circuits. 
+
+How to create SDCard/eMMC Partition:
+-----------------------------------
+Insert the microSD Card into your computer and observe which device it registers as by typing ls /dev/sd*. If you are uncertain, remove the microSD Card and the entry should go away. Once you know which device your microSD Card is, follow the instructions below
+
+replacing /dev/sdX with the name of the microSD Card in your system.
+
+1.Begin partitioning the microSD Card by typing   ( sudo fdisk /dev/sdX )
+2.Initialize a new partition table by selecting ( o ), then verify the partition table is empty by selecting ( p ).
+3.Create a boot partition by selecting ( n ) for ‘new’, then ( p ) for ‘primary’, and ( 1 ) to specify the first partition. Press ( enter ) to accept the default first sector and specify ( 4095 ) for the last sector.
+4.Change the partition type to FAT16 by selecting ( t ) for ‘type’ and ( e ) for ‘W95 FAT16 (LBA)’.
+5.Set the partition bootable by selecting ( a ) then ( 1 ).
+6.Next, create the data partition for the root filesystem by selecting ( n ) for ‘new’, then ( p ) for ‘primary’, and ( 2 ) to specify the second partition. Accept the default values for the first and last sectors by pressing ( enter twice ).
+7.Press ( p ) to ‘print’ the partition table. It should look similar to the one below.
+
+        Disk /dev/sdb: 7948 MB, 7948206080 bytes
+        255 heads, 63 sectors/track, 966 cylinders, total 15523840 sectors
+        Units = sectors of 1 * 512 = 512 bytes
+        Sector size (logical/physical): 512 bytes / 512 bytes
+        I/O size (minimum/optimal): 512 bytes / 512 bytes
+        Disk identifier: 0xafb3f87b
+
+           Device Boot      Start         End      Blocks   Id  System
+        /dev/sdb1   *        2048        4095        1024    e  W95 FAT16 (LBA)
+        /dev/sdb2            4096    15523839     7759872   83  Linux
+8.Finally, commit the changes by selecting ( w ) to ‘write’ the partition table and exit fdisk.
+9.Format the Partitions
+        Format partition 1 as FAT by typing ( sudo mkfs.vfat /dev/sdX1 )
+        Format partition 2 as ext4 by typing ( sudo mkfs.ext4 /dev/sdX2 )
+

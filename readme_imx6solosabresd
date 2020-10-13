@@ -1,0 +1,350 @@
+
+
+****************************************IN USER AMS******************************************
+
+////////////HOST PACKAGES \\\\\\\\
+
+
+1.$sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat libsdl1.2-dev
+
+2.$sudo apt-get install libsdl1.2-dev xterm sed cvs subversion coreutils texi2html docbook-utils python-pysqlite2 help2man make gcc g++ desktop-file-utils libgl1-mesa-dev libglu1-mesa-dev mercurial autoconf automake groff curl lzop asciidoc
+
+3.$sudo apt-get install u-boot-tools
+
+*******tool chain
+
+4.linaro tool chain > version 6
+
+5.vim /root/.bashrc
+	export PATH=$PATH:/path_for_cross_compiler_tool_chain/bin		(eg:/home/chendu/IMX6/general/gcc_linaro_7.1.1_2017.08_x86_64_arm_linux_gnueabihf)
+	source ./bashrc
+
+6.download kernel source from https://github.com/varigit/linux-imx/tree/imx_4.14.78_1.0.0_ga_var01
+
+7.	$ make distclean
+	$ make mrproper		
+
+8.make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- imx_v7_defconfig
+
+***********************************no_need *******************************
+
+/*
+7.$ cd linux-imx
+	$ make distclean
+	$ make mrproper		
+	$ make defconfig	(multi_v7_defconfig)
+
+*/
+
+
+8.make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- multi_v7_defconfig
+
+9.make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+
+10. make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- uImage LOADADDR=0x80800000  -j4
+
+	error:  CHK     include/generated/at91_pm_data-offsets.h
+^[[A  CC      drivers/pinctrl/core.o
+  CC      drivers/phy/ti/phy-omap-usb2.o
+  CC      drivers/pinctrl/pinctrl-utils.o
+  CC      drivers/phy/ti/phy-ti-pipe3.o
+In file included from drivers/phy/ti/phy-omap-usb2.c:30:0:
+./include/linux/phy/omap_control_phy.h:46:2: error: redeclaration of enumerator 'USB_MODE_HOST'
+  USB_MODE_HOST,
+  ^
+In file included from ./include/linux/usb/otg.h:14:0,
+                 from ./include/linux/phy/omap_usb.h:23,
+                 from drivers/phy/ti/phy-omap-usb2.c:24:
+./include/linux/usb/phy.h:69:2: note: previous definition of 'USB_MODE_HOST' was here
+  USB_MODE_HOST,
+  ^
+In file included from drivers/phy/ti/phy-omap-usb2.c:30:0:
+./include/linux/phy/omap_control_phy.h:47:2: error: redeclaration of enumerator 'USB_MODE_DEVICE'
+  USB_MODE_DEVICE,
+  ^
+In file included from ./include/linux/usb/otg.h:14:0,
+                 from ./include/linux/phy/omap_usb.h:23,
+                 from drivers/phy/ti/phy-omap-usb2.c:24:
+./include/linux/usb/phy.h:70:2: note: previous definition of 'USB_MODE_DEVICE' was here
+  USB_MODE_DEVICE,
+  ^
+scripts/Makefile.build:328: recipe for target 'drivers/phy/ti/phy-omap-usb2.o' failed
+make[3]: *** [drivers/phy/ti/phy-omap-usb2.o] Error 1
+make[3]: *** Waiting for unfinished jobs....
+  CC      drivers/pinctrl/pinmux.o
+  CC      drivers/pinctrl/pinconf.o
+scripts/Makefile.build:587: recipe for target 'drivers/phy/ti' failed
+make[2]: *** [drivers/phy/ti] Error 2
+scripts/Makefile.build:587: recipe for target 'drivers/phy' failed
+make[1]: *** [drivers/phy] Error 2
+make[1]: *** Waiting for unfinished jobs....
+  CC      drivers/pinctrl/devicetree.o
+
+
+11.removed 	DEVICE DRIVERS->PHY SUBSYSTEM
+			->TI PIPE3 PHY DRIVER
+			->OMAP	USB2 PHY DRIVER
+			->TI dm816x USB PHY driver
+
+error:arch/arm/mach-imx/busfreq_optee.o: In function `init_freq_optee':
+busfreq_optee.c:(.text+0x484): undefined reference to `imx_smp_wfe_optee'
+busfreq_optee.c:(.text+0x488): undefined reference to `imx_smp_wfe_optee'
+busfreq_optee.c:(.text+0x494): undefined reference to `imx_smp_wfe_optee_end'
+busfreq_optee.c:(.text+0x498): undefined reference to `imx_smp_wfe_optee'
+busfreq_optee.c:(.text+0x49c): undefined reference to `imx_smp_wfe_optee_end'
+busfreq_optee.c:(.text+0x4a0): undefined reference to `imx_smp_wfe_optee'
+busfreq_optee.c:(.text+0x500): undefined reference to `imx_smp_wfe_optee'
+busfreq_optee.c:(.text+0x504): undefined reference to `imx_smp_wfe_optee'
+
+12.make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+	enabled		->DEVICE DRIVERs->TRUCTED EXECUTION environment support->OP-TEE
+	disabled        ->DEVICE DRIVERs->Network device support -> PHY Device support and infrastructure->AT803x
+	disabled        ->DEVICE DRIVERs->Network device support ->Ethernet driver support->athros devices
+
+
+********************************upto here************************************************
+
+13. make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- uImage LOADADDR=0x80800000  -j4
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- dtbs
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules -j8
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_PATH=/media/root/b7d92cd3-54d7-478e-a0cf-1098528b2f6a/ modules_install
+
+
+u-boot.imx
+
+
+
+
+***************************************************uboot***********
+
+14.download u-boot 	https://github.com/varigit/uboot-imx/tree/imx_v2018.03_4.14.78_1.0.0_ga_var01
+
+15.make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6sxsabresd_defconfig
+
+16.make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- u-boot.imx
+
+17.sudo fdisk /dev/sdx	(x- sdcard device file)
+
+18.
+p	[lists the current partitions]
+d 	[to delete existing partitions. Repeat this until no unnecessary partitions are reported by the 'p' command to start fresh.]
+
+
+n 	[create a new partition]
+p	[create a primary partition - use for both partitions]
+1	[the first partition]
+20480	[starting at offset sector]
+1024000	[size for the first partition to be used for the boot images]
+p	[to check the partitions]
+
+n
+p
+2
+1228800	[starting at offset sector, which leaves enough space for the kernel,the bootloader and its configuration data]
+<enter>[using the default value will create a partition that extends to the last sector of the media]
+p	[to check the partitions]
+w	[this writes the partition table to the media and fdisk exits]
+
+19.sudo dd if=u-boot.imx of=/dev/sdb bs=1k seek=1 conv=fsync
+*************************************booting from sdcard***************************
+
+----> run mmcargs
+
+--->	fatload mmc 2:1 ${loadaddr} zImage
+
+--->	fatload mmc 2:1 ${fdt_addr} imx6sx-sdb.dtb
+
+--->	bootz ${loadaddr} - ${fdt_addr}
+
+
+**********************************************************booting from quad spi***********************************
+
+compile u-boot with  
+	--> make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6sxsabresd_qspi2_defconfig
+	--> make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- 
+		copy u-boot-dtb.imx ,(from kernel)	zImage ,imx6sx-sdb.dtb file into sdcard 1st partition (to follow below commands as-it-is) 
+		follow steps from 7 to 13
+		
+boot using sdcard and stop the booting in u-boot stage.
+
+20.$sf probe 1:0 	
+
+21.$sf erase 0x00 0x9e000 (erase length should be multiple pf 4k)
+
+22.$fatload mmc 1:1 ${loadaddr} u-boot-dtb.imx
+
+23.$ sf write ${loadaddr} 0x00 ${filesize}
+
+24.$ sf erase 0x9e000 0x7f9000
+
+25.fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} zImage
+
+26.$ sf write ${fdt_addr} 0x9e000 ${filesize}
+
+27.sf erase 0x897000 0xd000
+
+28.fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} imx6sx-sdb.dtb
+
+29.sf write ${fdt_addr} 0x897000 ${filesize}
+
+
+change mx6sxsabresd.h file (/u-boot source path/include/configs) 
+
+	128+	"qspiargs=setenv bootargs console=${console},${baudrate}\0" \
+	129+	"qspiboot=echo booting from quadspi.....;" \
+	130+	"run qspiargs; " \
+	131+	"sf probe 1:0; " \
+	132+	"sf read ${loadaddr} 0x9e000 0x7dc000; " \
+	133+	"sf read ${fdt_addr} 0x87a000 0xd000; " \
+	134+	"bootz ${loadaddr} - ${fdt_addr};\0" \
+
+	179-	netboot
+	179+	qspiboot
+	182-	netboot
+	182+	qspiboot
+
+
+
+//////////////////////////creating filesystem for qspi booting ///////////////////////
+
+mkfs.jffs2 default_root.tar.gz -s 0.25 -p -o rootfs.jffs
+
+
+
+ mkfs.jffs2 -r rootfs_default/ -s 0.25 -e 4 -o rootfs.jffs2 -l 
+
+
+
+
+***************************working with m4 core**************
+
+device tree  
+		imx6sx-sdb-m4.dtb
+
+u-boot(with defconfig file mx6sxsabresd_qspi2_defconfig)
+	uboot-sdb.imx
+
+m4 works with RTOS (download freertos bsp )
+		
+	/home/chendu/IMX6/FreeRTOS_BSP_1.0.1_iMX6SX
+
+************for testing purpose 
+
+$cd /home/chendu/IMX6/FreeRTOS_BSP_1.0.1_iMX6SX/examples/imx6sx_sdb_m4/demo_apps/hello_world/armgcc
+
+->A baremetal toolchain is needed to compile for Cortex-M4
+
+$wget https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/7-2018q2/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2
+
+$tar xvf gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2
+	location: /home/gcc-arm-none-eabi-7-2018-q2-update
+
+
+
+*****************************can related***********************
+
+1.ip link set can0 up type can bitrate 125000
+
+2.ip link set can1 up type can bitrate 125000
+
+3.candump can0 &
+
+4.cansend can1 123#12345678
+
+5.ps -el
+
+6.kill -9 PID
+
+*******************************network boot***********************************
+
+**************host pc******************
+copy zImage , imx6sx-sdb.dtb file to --> /var/lib/tftpboot/ (if there is no folder create it)
+
+
+ifconfig enp1s0 192.168.27.1
+
+==>apt-get install build-essential
+
+==>apt-get install libncurses5-dev
+
+==>apt-get install bison
+
+==>apt-get install flex
+
+==>apt-get install gettext
+
+==>apt-get install texinfo
+
+==>apt-get install subversion
+
+==>apt-get install nfs-kernel-server nfs-common portmap
+
+Do you want to continue [Y/n]? Y
+
+==>dpkg-reconfigure portmap
+Select “No”
+
+==>mkdir /var/lib/tftpboot/
+	mkdir /var/lib/tftpboot/rootfs/
+
+copy zImage , imx6sx-sdb.dtb to /var/lib/tftpboot and extract rootfs to /var/lib/tftpboot/rootfs
+
+-->vim /etc/exports
+	/var/lib/tftpboot/rootfs/ *(rw,sync,no_root_squash,no_subtree_check)
+
+-->service nfs-kernel-server restart
+-->service portmap restart
+
+	->exportfs
+
+-->vi /etc/xinetd.d/tftp
+service tftp
+  {
+   protocol        = udp
+   port            = 69
+   socket_type     = dgram
+   wait            = yes
+   user            = nobody
+  server          = /usr/sbin/in.tftpd
+  server_args     = /var/lib/tftpboot -s
+  disable         = no
+  }
+
+--->vim /etc/default/tftpd-hp
+RUN_DAEMON="yes"
+   TFTP_USERNAME="tftp"
+   TFTP_DIRECTORY="/var/lib/tftpboot"
+   TFTP_ADDRESS=":69"
+   TFTP_OPTIONS="--secure"
+
+***************board************************
+stop at u-boot
+
+-->setenv serverip 192.168.27.1
+
+-->setenv ipaddr 192.168.27.2
+
+-->tftpboot ${loadaddr} zImage
+
+-->tftpboot ${fdt_addr} imx6sx-sdb.dtb
+
+u-boot env command:
+
+setenv netargs setenv bootargs console=ttymxc0,115200 ip=192.168.27.2:::255.255.255.0:root:eth0 root=/dev/nfs rw nfsroot=192.168.27.1:/var/lib/tftpboot/rootfs/
+
+bootz ${loadaddr} - ${fdt_addr}
+
+****************************usbboot****************************
+**********in u-boot*************
+$usb reset
+$setenv bootargs console=ttymxc0,115200 root=/dev/sdb2 rw rootfstype=ext4 
+$fatload usb 1 ${loadaddr} zImage
+$fatload usb 1 ${fdt_addr} imx6sx-sdb.dtb
+&bootz ${loadaddr} - ${fdt_addr}
+
+
+
+
